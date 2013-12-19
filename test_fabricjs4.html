@@ -10,14 +10,39 @@
 </head>
 <body>
     <button id="btnZoomIn">ZoomIn</button> <button id="btnZoomOut">ZoomOut</button> <button id="btnResetZoom">Reset Zoom</button>
+    Opacity<input type="range" id="opacity-control" value="0.5" min="0" max="1" step="0.1"></> <input type="text" id="multi" value="1">倍數</input><a id="link" href="#">Download</a>
     <br/>
-    <canvas id="c" width="2048" height="1536"></canvas>
+    <canvas id="c" width="1418" height="1772"></canvas>
 </body>
 <script>
+    $("a").on("click", function () {
+        var d = new Date().toISOString().slice(0, 19).replace(/-/g, "");
+        $(this).attr("href", canvas.toDataURLWithMultiplier('png', $('#multi').val())).attr("download", "file-" + d + ".png");
+    });
+
+    $('#opacity-control').change(function () {
+        console.log(this.value);
+        canvas.overlayImage.opacity = this.value;
+        canvas.renderAll();
+    });
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    };
+
+    temp = getParameterByName('temp');
+
     var zoom_out_cnt = 0;
     var zoom_in_cnt = 0;
 
-    var src = "images/test4.png";
+    //test_fabricjs4.html?temp=相框-01.png
+    // gimp教學 http://cc.wfes.tp.edu.tw/g51-gimp/
+
+    //var src = "http://cc.wfes.tp.edu.tw/g51-gimp/%E5%A5%BD%E5%BA%B7%E7%A6%AE%E7%89%A9/%E7%9B%B8%E6%A1%86%E6%A8%A1%E7%89%88/" + temp;
+    var src = "images/" + temp;
     var copiedObject;
     var copiedObjects = new Array();
     var canvasScale = 1;
@@ -28,37 +53,38 @@
     canvas.backgroundColor = "#F5F5F5";
 
     // text
-    var text = new fabric.Text('Text inside canvas', {
-        left: 200,
-        top: 50
-    });
-    text.hasRotatingPoint = true;
-    canvas.add(text);
+    //var text = new fabric.Text('Text inside canvas', {
+    //    left: 200,
+    //    top: 50
+    //});
+    //text.hasRotatingPoint = true;
+    //canvas.add(text);
 
     // circle
-    var circle = new fabric.Circle({
-        left: 200,
-        top: 150,
-        radius: 50,
-        fill: "#dd0000"
-    });
-    circle.hasRotatingPoint = true;
-    canvas.add(circle);
+    //var circle = new fabric.Circle({
+    //    left: 200,
+    //    top: 150,
+    //    radius: 50,
+    //    fill: "#dd0000"
+    //});
+    //circle.hasRotatingPoint = true;
+    //canvas.add(circle);
 
     //image
-    fabric.util.loadImage(src, function (img) {
-        var object = new fabric.Image(img);
-        object.set({
-            left: 200,
-            top: 300
-        });
-        object.hasRotatingPoint = true;
-        object.scaleX = object.scaleY =1;
-        canvas.add(object);
+    canvas.setOverlayImage(src, function () {
+        canvas.overlayImage.opacity = 0.6;
+        canvas.overlayImage.setCoords();
+        canvas.width = canvas.overlayImage.getWidth();
+        canvas.height = canvas.overlayImage.getHeight();
         canvas.renderAll();
     });
 
-    canvas.renderAll();
+    fabric.Image.fromURL("images/3-1.jpg", function (img) {
+        canvas.add(img);
+        canvas.renderAll();
+    });
+
+    //canvas.renderAll();
 
 
     // button Zoom In
@@ -152,6 +178,8 @@
 
         canvas.setHeight(canvas.getHeight() * SCALE_FACTOR);
         canvas.setWidth(canvas.getWidth() * SCALE_FACTOR);
+        canvas.overlayImage.setHeight(canvas.overlayImage.getHeight() * SCALE_FACTOR);
+        canvas.overlayImage.setWidth(canvas.overlayImage.getWidth() * SCALE_FACTOR);
 
         var objects = canvas.getObjects();
         for (var i in objects) {
@@ -188,6 +216,8 @@
 
         canvas.setHeight(canvas.getHeight() * (1 / SCALE_FACTOR));
         canvas.setWidth(canvas.getWidth() * (1 / SCALE_FACTOR));
+        canvas.overlayImage.setHeight(canvas.overlayImage.getHeight() * (1 / SCALE_FACTOR));
+        canvas.overlayImage.setWidth(canvas.overlayImage.getWidth() * (1 / SCALE_FACTOR));
 
         var objects = canvas.getObjects();
         for (var i in objects) {
@@ -221,6 +251,8 @@
 
         canvas.setHeight(canvas.getHeight() * (1 / canvasScale));
         canvas.setWidth(canvas.getWidth() * (1 / canvasScale));
+        canvas.overlayImage.setHeight(canvas.overlayImage.getHeight() * (1 / canvasScale));
+        canvas.overlayImage.setWidth(canvas.overlayImage.getWidth() * (1 / canvasScale));
 
         var objects = canvas.getObjects();
         for (var i in objects) {
@@ -261,5 +293,6 @@
         else
             $("#btnZoomOut").attr("disabled", false)
     }
+
 </script>
 </html>
