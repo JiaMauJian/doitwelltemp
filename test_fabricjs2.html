@@ -1,0 +1,433 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script src="painter/all.js" ></script>
+    <script src="painter/jquery-1.10.2.min.js"></script>
+    <style>
+		
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td>                
+                <span>給定模板</span><button id="saveto" type="button" >套用模板</button>
+                <canvas id="c" width="600" height="500" style="color:blue;border:1px solid silver;"></canvas>                
+            </td>        
+            <td>
+                <span>套用模板</span><button id="export" type="button" >圖檔輸出</button>
+                <canvas id="c2" width="600" height="500" style="color:blue;border:1px solid silver;"></canvas>
+            </td>
+            <td>
+                <span>圖檔</span><img id="out_img"></img>                
+            </td>
+        </tr>    
+    </table>	
+	<div id="divcx"></div>
+</body>
+<script>
+    //http://140.116.86.160/test_fabricjs2.html?fn=124.svg
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    };
+
+    fn = getParameterByName('fn');
+
+    var img01URL = 'images/logo4w.png';
+    var img02URL = 'images/pug.jpg';
+
+    var frc_canvas = new fabric.Canvas('c2');
+    fabric.Image.fromURL('images/butterfly.jpg', function (img) {
+        frc_canvas.add(img);
+        img.center();        
+        frc_canvas.renderAll();
+    });
+
+    //var ntv_canvas = document.getElementById('c');
+    //canvas.backgroundColor = "transparent";
+    //canvas.renderAll();
+    var canvas = document.getElementById('c');
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(0, 0, 600, 600);
+    ctx.globalCompositeOperation = 'destination-out';
+
+
+    fabric.loadSVGFromURL('images/' + fn, function (svg) {
+        gg = new fabric.PathGroup(svg);
+        /* 
+        gg.set({
+        left: 200,
+        top: 200,
+        scaleX: 3.5,
+        scaleY: 3.5
+        });
+        */                
+
+        var l = 0; // -((gg.paths[0].width / 2) + gg.paths[0].pathOffset.x);
+        var t = 0; // -((gg.paths[0].height / 2) + gg.paths[0].pathOffset.y);
+        //ctx.scale(1,1); //支援放大縮小
+        //ctx.strokeStyle = "rgb(0,160,212)";
+        ctx.beginPath();
+        ctx.fillStyle = 'red';                          
+        for (var j = 0; j < gg.paths.length; j++) {
+
+
+            for (var i = 0, len = gg.paths[j].path.length; i < len; ++i) {
+                current = gg.paths[j].path[i];
+
+                switch (current[0]) { // first letter
+
+                    case 'l': // lineto, relative
+                        x += current[1];
+                        y += current[2];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'L': // lineto, absolute
+                        x = current[1];
+                        y = current[2];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'h': // horizontal lineto, relative
+                        x += current[1];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'H': // horizontal lineto, absolute
+                        x = current[1];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'v': // vertical lineto, relative
+                        y += current[1];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'V': // verical lineto, absolute
+                        y = current[1];
+                        ctx.lineTo(x + l, y + t);
+                        break;
+
+                    case 'm': // moveTo, relative
+                        x += current[1];
+                        y += current[2];
+                        // draw a line if previous command was moveTo as well (otherwise, it will have no effect)
+                        //ctx[(previous && (previous[0] === 'm' || previous[0] === 'M')) ? 'lineTo' : 'moveTo'](x + l, y + t);
+                        ctx.moveTo(x + l, y + t);
+                        break;
+
+                    case 'M': // moveTo, absolute
+                        x = current[1];
+                        y = current[2];
+                        // draw a line if previous command was moveTo as well (otherwise, it will have no effect)
+                        //ctx[(previous && (previous[0] === 'm' || previous[0] === 'M')) ? 'lineTo' : 'moveTo'](x + l, y + t);
+                        ctx.moveTo(x + l, y + t);
+                        break;
+
+                    case 'c': // bezierCurveTo, relative
+                        tempX = x + current[5];
+                        tempY = y + current[6];
+                        controlX = x + current[3];
+                        controlY = y + current[4];
+                        ctx.bezierCurveTo(
+                  x + current[1] + l, // x1
+                  y + current[2] + t, // y1
+                  controlX + l, // x2
+                  controlY + t, // y2
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+                        break;
+
+                    case 'C': // bezierCurveTo, absolute
+                        x = current[5];
+                        y = current[6];
+                        controlX = current[3];
+                        controlY = current[4];
+                        ctx.bezierCurveTo(
+                  current[1] + l,
+                  current[2] + t,
+                  controlX + l,
+                  controlY + t,
+                  x + l,
+                  y + t
+                );
+                        break;
+
+                    case 's': // shorthand cubic bezierCurveTo, relative
+
+                        // transform to absolute x,y
+                        tempX = x + current[3];
+                        tempY = y + current[4];
+
+                        // calculate reflection of previous control points
+                        controlX = controlX ? (2 * x - controlX) : x;
+                        controlY = controlY ? (2 * y - controlY) : y;
+
+                        ctx.bezierCurveTo(
+                  controlX + l,
+                  controlY + t,
+                  x + current[1] + l,
+                  y + current[2] + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        // set control point to 2nd one of this command
+                        // "... the first control point is assumed to be the reflection of the second control point on the previous command relative to the current point."
+                        controlX = x + current[1];
+                        controlY = y + current[2];
+
+                        x = tempX;
+                        y = tempY;
+                        break;
+
+                    case 'S': // shorthand cubic bezierCurveTo, absolute
+                        tempX = current[3];
+                        tempY = current[4];
+                        // calculate reflection of previous control points
+                        controlX = 2 * x - controlX;
+                        controlY = 2 * y - controlY;
+                        ctx.bezierCurveTo(
+                  controlX + l,
+                  controlY + t,
+                  current[1] + l,
+                  current[2] + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+
+                        // set control point to 2nd one of this command
+                        // "... the first control point is assumed to be the reflection of the second control point on the previous command relative to the current point."
+                        controlX = current[1];
+                        controlY = current[2];
+
+                        break;
+
+                    case 'q': // quadraticCurveTo, relative
+                        // transform to absolute x,y
+                        tempX = x + current[3];
+                        tempY = y + current[4];
+
+                        controlX = x + current[1];
+                        controlY = y + current[2];
+
+                        ctx.quadraticCurveTo(
+                  controlX + l,
+                  controlY + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+                        break;
+
+                    case 'Q': // quadraticCurveTo, absolute
+                        tempX = current[3];
+                        tempY = current[4];
+
+                        ctx.quadraticCurveTo(
+                  current[1] + l,
+                  current[2] + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+                        controlX = current[1];
+                        controlY = current[2];
+                        break;
+
+                    case 't': // shorthand quadraticCurveTo, relative
+
+                        // transform to absolute x,y
+                        tempX = x + current[1];
+                        tempY = y + current[2];
+
+
+                        if (previous[0].match(/[QqTt]/) === null) {
+                            // If there is no previous command or if the previous command was not a Q, q, T or t,
+                            // assume the control point is coincident with the current point
+                            controlX = x;
+                            controlY = y;
+                        }
+                        else if (previous[0] === 't') {
+                            // calculate reflection of previous control points for t
+                            controlX = 2 * x - tempControlX;
+                            controlY = 2 * y - tempControlY;
+                        }
+                        else if (previous[0] === 'q') {
+                            // calculate reflection of previous control points for q
+                            controlX = 2 * x - controlX;
+                            controlY = 2 * y - controlY;
+                        }
+
+                        tempControlX = controlX;
+                        tempControlY = controlY;
+
+                        ctx.quadraticCurveTo(
+                  controlX + l,
+                  controlY + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+                        controlX = x + current[1];
+                        controlY = y + current[2];
+                        break;
+
+                    case 'T':
+                        tempX = current[1];
+                        tempY = current[2];
+
+                        // calculate reflection of previous control points
+                        controlX = 2 * x - controlX;
+                        controlY = 2 * y - controlY;
+                        ctx.quadraticCurveTo(
+                  controlX + l,
+                  controlY + t,
+                  tempX + l,
+                  tempY + t
+                );
+                        x = tempX;
+                        y = tempY;
+                        break;
+
+                    case 'a':
+                        // TODO: optimize this
+                        drawArc(ctx, x + l, y + t, [
+                  current[1],
+                  current[2],
+                  current[3],
+                  current[4],
+                  current[5],
+                  current[6] + x + l,
+                  current[7] + y + t
+                ]);
+                        x += current[6];
+                        y += current[7];
+                        break;
+
+                    case 'A':
+                        // TODO: optimize this
+                        drawArc(ctx, x + l, y + t, [
+                  current[1],
+                  current[2],
+                  current[3],
+                  current[4],
+                  current[5],
+                  current[6] + l,
+                  current[7] + t
+                ]);
+                        x = current[6];
+                        y = current[7];
+                        break;
+
+                    case 'z':
+                    case 'Z':
+                        break;
+                }
+            }
+        }
+
+        ctx.fill();
+
+
+    });
+
+    $("#saveto").click(function () {
+        var json = {};
+        json.data = canvas.toDataURL();
+        $.ajax({
+            type: 'POST',
+            dataType: "json",
+            url: 'HandlerPainter.ashx?action=svg_save',
+            data: json,
+            success: function (data) {
+                if (data.id == '999')
+                    alert(data.message);
+                else {
+                    frc_canvas.setOverlayImage("images/test.png", function () {
+                        frc_canvas.overlayImage.opacity = 0.5;
+                        frc_canvas.renderAll();                    
+                    });                    
+                }
+            }
+        });
+    });
+
+    $("#export").click(function () {
+        frc_canvas.overlayImage.opacity = 1;
+        frc_canvas.renderAll();
+        $("#out_img").attr("src", frc_canvas.toDataURL());
+        frc_canvas.overlayImage.opacity = 0.5;
+        frc_canvas.renderAll();
+    });
+    /*
+    ctx.beginPath();
+    ctx.rect(10,10,150,150);
+    ctx.rect(180,10,200,200);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.clip();
+    */
+    /*
+    fabric.Image.fromURL(img01URL, function(oImg) {
+    oImg.scale(.25);
+    oImg.left = 50;
+    oImg.top = 100;
+    canvas.add(oImg);
+    canvas.renderAll();
+    });
+
+    fabric.Image.fromURL(img02URL, function(oImg) {
+    oImg.scale(.25);
+    oImg.left = 300;
+    oImg.top = 100;
+    canvas.add(oImg);
+    canvas.renderAll();
+    });
+    */
+    /*
+    $("#saveto").click(function () {
+    var a=document.getElementById("divcx");
+    //alert(a.innerHTML);
+    a.innerHTML="<canvas id='cx' width='400' height='400'></canvas>";
+				
+    fabric.Image.fromURL(ntv_canvas.toDataURL(1), function (img) {
+				
+    var frc_rlt_canvas = new fabric.Canvas('cx');
+    frc_rlt_canvas.add(img);
+    frc_rlt_canvas.renderAll();
+
+    var json = {};
+    json.data = frc_rlt_canvas.toDataURLWithMultiplier('png', 9);
+    //json.data = ntv_canvas.toDataURL(1);
+    $.ajax({
+    type: 'POST',
+    dataType: "json",
+    url: 'HandlerPainter.ashx?action=svg_save',
+    data: json,
+    success: function (data) {
+    if (data.id == '999')
+    alert(data.message);                        
+    }
+    });
+    });
+    a.innerHTML=""
+    });
+		
+    */    
+</script>
+</html>

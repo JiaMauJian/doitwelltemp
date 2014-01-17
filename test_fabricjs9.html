@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script src="painter/all.js" ></script>
+    <script src="painter/jquery-1.10.2.min.js"></script> 
+	<style type="text/css">
+    .canvas-container{
+        position:absolute;
+        top:0px;
+        left:0px;
+        z-index:1000;
+        width:400px;
+        height:400px;
+    }
+    .upper-canvas{
+        position:absolute;
+        top:0px;
+        left:0px;
+        z-index:1100;
+    }
+
+    .lower-canvas{
+      z-index:1100;
+    }
+
+    .container{
+      position:absolute;
+      top:0px;
+      left:0px;
+      z-index:1000;
+      width:400px;
+      height:400px;
+    }
+</style>	
+</head>
+<body>   
+<div id="wrapper">
+  <div class="canvas-container">
+    <canvas id="c1" width="400" height="200" style="border:1px solid black;position:absolute;top:0px;left:0px;z-index:1;"></canvas>
+    <canvas id="c2" width="200" height="100" style="border:1px solid red;position:absolute;top:0px;left:0px;z-index:2;"></canvas>
+  </div>
+</div>
+</body>
+
+<script>
+
+//http://stackoverflow.com/questions/13195481/get-the-canvas-object-while-using-fabric-js
+//var x = new fabric.Canvas("mycanvas");
+//document.getElementById("mycanvas").fabric = x;
+//You can then retrieve that object any time you want with:
+
+//var y = document.getElementById("mycanvas").fabric;
+//var url = y.toDataURL("png", 1);
+
+    var c1 = new fabric.Canvas('c1');
+    var c2 = new fabric.Canvas('c2');
+
+    $("#c1").parent().css({ "position": "absolute", "top": "0px", "left": "0px", "z-index": "1" });
+    $("#c2").parent().css({ "position": "absolute", "top": "50px", "left": "50px", "z-index": "2" });
+    c1.calcOffset();
+    c2.calcOffset();
+
+    fabric.Image.fromURL('images/pug.jpg', function (img) {
+        c1.add(img);
+        c1.renderAll();
+    });
+
+    fabric.Image.fromURL('images/butterfly.jpg', function (img) {
+        c2.add(img);
+        c2.clipTo = function (ctx) {
+            shp = new fabric.Circle({
+                radius: 50
+            });            
+            shp.render(ctx);
+        };
+        c2.renderAll();
+    });
+
+    c1.observe("mouse:up", function () {
+        //alert("mouse on canvas 1");
+        c1.calcOffset();
+    });
+
+    c2.observe("mouse:up", function () {
+        //alert("mouse on canvas 2");
+        c2.calcOffset();
+    });
+</script>
+
+</html>
